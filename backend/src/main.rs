@@ -15,9 +15,17 @@ use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+struct URLRequest {
+    url: String,
+    method: String,
+    headers: serde_json::Value,
+    body: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct IncomingRequest {
     timestamp: String,
-    body: serde_json::Value,
+    request: URLRequest,
 }
 
 type SharedState = Arc<Mutex<Vec<IncomingRequest>>>;
@@ -32,7 +40,7 @@ async fn main() {
         .allow_headers(Any);
 
     let app = Router::new()
-        .route("/", post(handle_post))
+        .route("/requests", post(post_requests))
         .route("/requests", get(get_requests))
         .layer(cors)
         .with_state(state);
@@ -43,14 +51,14 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn handle_post(
+async fn post_requests(
     state: axum::extract::State<SharedState>,
-    Json(payload): Json<serde_json::Value>,
+    Json(payload): Json<URLRequest>,
 ) -> &'static str {
     let mut requests = state.lock().unwrap();
     requests.push(IncomingRequest {
         timestamp: Utc::now().to_rfc3339(),
-        body: payload,
+        request: payload,
     });
     "ok"
 }
