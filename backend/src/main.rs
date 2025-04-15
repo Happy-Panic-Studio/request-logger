@@ -20,6 +20,7 @@ struct URLRequest {
     method: String,
     headers: serde_json::Value,
     body: Option<serde_json::Value>,
+    responseBody: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

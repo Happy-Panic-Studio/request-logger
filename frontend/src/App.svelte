@@ -4,6 +4,40 @@
   let requests = [];
   let error = null;
   const BACKEND_URL = '/api';
+  let expandedHeaders = new Set();
+  let expandedBodies = new Set();
+
+  function toggleHeaders(requestId) {
+    if (expandedHeaders.has(requestId)) {
+      expandedHeaders.delete(requestId);
+    } else {
+      expandedHeaders.add(requestId);
+    }
+    expandedHeaders = expandedHeaders; // Trigger reactivity
+  }
+
+  function toggleBody(requestId, type) {
+    const key = `${requestId}-${type}`;
+    if (expandedBodies.has(key)) {
+      expandedBodies.delete(key);
+    } else {
+      expandedBodies.add(key);
+    }
+    expandedBodies = expandedBodies; // Trigger reactivity
+  }
+
+  function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  }
 
   async function fetchRequests() {
     try {
@@ -240,6 +274,76 @@
   pre::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
   }
+
+  .headers-toggle {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9em;
+    transition: color 0.2s;
+  }
+
+  .headers-toggle:hover {
+    color: #2c3e50;
+  }
+
+  .headers-toggle svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s;
+  }
+
+  .headers-toggle.expanded svg {
+    transform: rotate(180deg);
+  }
+
+  .headers-content {
+    margin-top: 0.5rem;
+  }
+
+  .headers-content.collapsed {
+    display: none;
+  }
+
+  .body-toggle {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.9em;
+    transition: color 0.2s;
+  }
+
+  .body-toggle:hover {
+    color: #2c3e50;
+  }
+
+  .body-toggle svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s;
+  }
+
+  .body-toggle.expanded svg {
+    transform: rotate(180deg);
+  }
+
+  .body-content {
+    margin-top: 0.5rem;
+  }
+
+  .body-content.collapsed {
+    display: none;
+  }
 </style>
 
 <div class="container">
@@ -281,37 +385,70 @@
           <th>URL</th>
           <th>Headers</th>
           <th>Body</th>
+          <th>Response Body</th>
         </tr>
       </thead>
       <tbody>
         {#each requests as req}
           <tr>
-            <td class="timestamp">{req.timestamp}</td>
+            <td class="timestamp">{formatTimestamp(req.timestamp)}</td>
             <td><span class="method">{req.request.method}</span></td>
             <td class="url">{req.request.url}</td>
             <td class="headers">
               {#if Object.keys(req.request.headers).length > 0}
-                <table class="sub-table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {#each Object.entries(req.request.headers) as [name, value]}
-                      <tr>
-                        <td>{name}</td>
-                        <td>{value}</td>
-                      </tr>
-                    {/each}
-                  </tbody>
-                </table>
+                <button 
+                  class="headers-toggle {expandedHeaders.has(req.timestamp) ? 'expanded' : ''}"
+                  on:click={() => toggleHeaders(req.timestamp)}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="currentColor"/>
+                  </svg>
+                  Headers ({Object.keys(req.request.headers).length})
+                </button>
+                <div class="headers-content {expandedHeaders.has(req.timestamp) ? '' : 'collapsed'}">
+                  <table class="sub-table">
+                    <tbody>
+                      {#each Object.entries(req.request.headers) as [name, value]}
+                        <tr>
+                          <td>{name}</td>
+                          <td>{value}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                </div>
               {/if}
             </td>
             <td class="body">
               {#if req.request.body}
-                <pre>{JSON.stringify(req.request.body, null, 2)}</pre>
+                <button 
+                  class="body-toggle {expandedBodies.has(`${req.timestamp}-request`) ? 'expanded' : ''}"
+                  on:click={() => toggleBody(req.timestamp, 'request')}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="currentColor"/>
+                  </svg>
+                  Request Body
+                </button>
+                <div class="body-content {expandedBodies.has(`${req.timestamp}-request`) ? '' : 'collapsed'}">
+                  <pre>{JSON.stringify(req.request.body, null, 2)}</pre>
+                </div>
+              {/if}
+            </td>
+            <td class="body">
+              {#if req.request.responseBody}
+                <button 
+                  class="body-toggle {expandedBodies.has(`${req.timestamp}-response`) ? 'expanded' : ''}"
+                  on:click={() => toggleBody(req.timestamp, 'response')}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7.41 8.59L12 13.17L16.59 8.59L18 10L12 16L6 10L7.41 8.59Z" fill="currentColor"/>
+                  </svg>
+                  Response Body
+                </button>
+                <div class="body-content {expandedBodies.has(`${req.timestamp}-response`) ? '' : 'collapsed'}">
+                  <pre>{JSON.stringify(req.request.responseBody, null, 2)}</pre>
+                </div>
               {/if}
             </td>
           </tr>
