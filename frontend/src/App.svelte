@@ -16,6 +16,17 @@
     }
   }
 
+  async function clearRequests() {
+    try {
+      error = null;
+      await axios.delete(`${BACKEND_URL}/requests`);
+      requests = [];
+    } catch (error) {
+      console.error('Error clearing requests:', error);
+      error = 'Failed to clear requests.';
+    }
+  }
+
   // Fetch requests immediately and then every 2 seconds
   fetchRequests();
   setInterval(fetchRequests, 2000);
@@ -133,6 +144,34 @@
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   }
 
+  .clear-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+    margin-bottom: 1.5rem;
+  }
+
+  .clear-button:hover {
+    background: #c82333;
+  }
+
+  .clear-button:active {
+    background: #bd2130;
+  }
+
+  .clear-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
   .method {
     font-weight: 600;
     color: #3498db;
@@ -213,6 +252,15 @@
       </svg>
       {error}
     </div>
+  {/if}
+  
+  {#if requests.length > 0}
+    <button class="clear-button" on:click={clearRequests}>
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z" fill="currentColor"/>
+      </svg>
+      Clear All Requests
+    </button>
   {/if}
   
   {#if requests.length === 0 && !error}

@@ -2,7 +2,7 @@ use axum::{
     extract::Json,
     http::Method,
     response::Html,
-    routing::{get, post},
+    routing::{get, post, delete},
     Router,
 };
 use chrono::Utc;
@@ -42,6 +42,7 @@ async fn main() {
     let app = Router::new()
         .route("/requests", post(post_requests))
         .route("/requests", get(get_requests))
+        .route("/requests", delete(clear_requests))
         .layer(cors)
         .with_state(state);
 
@@ -68,5 +69,13 @@ async fn get_requests(
 ) -> Json<Vec<IncomingRequest>> {
     let requests = state.lock().unwrap().clone();
     Json(requests.into_iter().rev().collect())
+}
+
+async fn clear_requests(
+    state: axum::extract::State<SharedState>,
+) -> &'static str {
+    let mut requests = state.lock().unwrap();
+    requests.clear();
+    "ok"
 }
 
